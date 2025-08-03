@@ -1,0 +1,679 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 67,
+   "id": "7c2a3bcd-2026-482a-8764-1e43bb010b11",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "torch: 2.7.1+cu126\n",
+      "torchvision: 0.22.1+cu126\n",
+      "transformers: 4.54.0\n",
+      "numpy: 1.26.4\n",
+      "scipy: 1.16.1\n"
+     ]
+    }
+   ],
+   "source": [
+    "import torch\n",
+    "import torchvision\n",
+    "import transformers\n",
+    "import numpy\n",
+    "import scipy\n",
+    "print(\"torch:\", torch.__version__)\n",
+    "print(\"torchvision:\", torchvision.__version__)\n",
+    "print(\"transformers:\", transformers.__version__)\n",
+    "print(\"numpy:\", numpy.__version__)\n",
+    "print(\"scipy:\", scipy.__version__)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "id": "c4cf352f-7974-49df-9c45-e3e09b9bf88f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#!pip install transformers datasets --quiet\n",
+    "import pandas as pd\n",
+    "import torch\n",
+    "\n",
+    "from transformers import logging\n",
+    "logging.set_verbosity_error()\n",
+    "\n",
+    "#!pip install \"numpy<2\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 69,
+   "id": "8ee2e148-6ec9-4936-a89e-2dde2d3ae1e6",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{'Author_Name': ['Ricardo ', 'matt ', 'Joel G ', 'Dennis ', 'Alf Skrastins '],\n",
+      " 'Rating': [5, 5, 5, 5, 5],\n",
+      " 'Review': [' there is no way back, enjoy what you have .',\n",
+      "            ' 1st 95 went over 300k before being totalled by a truck running a '\n",
+      "            'red light. Walked away with no injuries. 2nd 95 le supercharged '\n",
+      "            'going strong at 155k. Just routine maintenance.  Bought a 96 dx '\n",
+      "            'with 68 k, like new on inside. Middle bench removes in 2 minutes, '\n",
+      "            'easy to haul things. 95s had the great swiveling middle captain '\n",
+      "            'chairs.  Could not resist a 1 owner 97 sc alltrac LE with 80k '\n",
+      "            'that I spotted on craigslist, talk about awesome in the snow!  '\n",
+      "            'These are fantastic, reliable vans and the best used van value '\n",
+      "            'ever.  Use as an enclosed pickup, or convert to a mini RV, loads '\n",
+      "            'of space inside.  Easy to fix minor quirks like higher mileage '\n",
+      "            'valve cover gasket leaks, coolant reservoir outlet tube '\n",
+      "            'obstruction by debris, SADS bushing replacement, etc.',\n",
+      "            ' Sold 86 Toyota Van 285K miles to be replaced with 97 Previa with '\n",
+      "            '1st baby coming in Jun. Perfect to carry 2nd kid in 99. Also '\n",
+      "            \"carried Mom, Dad, Father-in-law to doctor's appt. Use mostly for \"\n",
+      "            'reserve weekend duty. Did not change remote bat 6 yrs later. Did '\n",
+      "            'reg maint oil/filter chg every 3K. Used in business for 6 yrs as '\n",
+      "            'modified pick up truck by removing middle seat & folding 3rd row. '\n",
+      "            'Kids love this because they can lie down and sleep and watch tv. '\n",
+      "            'Our kids and parents in their 80s enjoyed trips to NY, VA, FL, '\n",
+      "            'LA, GA, TN, SC, NC, AL, TX, MA, CO. With this economy we are glad '\n",
+      "            'to have Toyotas in our family. Camry 02 replaced 88 Celica. '\n",
+      "            'Convinced five younger brothers to get Toyotas. They did.',\n",
+      "            ' I have owned lots of vans, and the Previa is far and away the '\n",
+      "            \"best van I have ever owned.  Build quality is unbelievable (it's \"\n",
+      "            'a Toyota, stupid), handling is exemplary with the mid- engine and '\n",
+      "            'AWD.  Fuel mileage is 19 mpg around town, with up to 24 on the '\n",
+      "            \"highway.  I'm a Toyota salesman, and I sold this van new to an \"\n",
+      "            'engineer and bought it from the family after he passed away. I '\n",
+      "            'constantly am amazed with the number of people who ask me if I '\n",
+      "            'want to sell it.  Never is a hundred years.',\n",
+      "            ' My 1997 AWD Previa is the third one that I have owned. I '\n",
+      "            'previously had a 1991 and a 1994. All three have been completely '\n",
+      "            'trouble free, for a total of over 620K mi. The supercharger gives '\n",
+      "            'the 2.4 litre engine the punch of a V6, while delivering great '\n",
+      "            \"gas mileage. I've been searching for a replacement for 5 years, \"\n",
+      "            'but nothing made these days even comes close. The Sienna is too '\n",
+      "            'long, fat, low and is just not as much fun. If Toyota ever made a '\n",
+      "            'reasonable replacement for the Previa, I would buy it in an '\n",
+      "            'instance.'],\n",
+      " 'Review_Date': [' on 02/02/17 19:53 PM (PST)',\n",
+      "                 ' on 12/17/16 16:40 PM (PST)',\n",
+      "                 ' on 04/14/10 07:43 AM (PDT)',\n",
+      "                 ' on 11/12/08 17:31 PM (PST)',\n",
+      "                 ' on 04/14/08 22:47 PM (PDT)'],\n",
+      " 'Review_Title': ['great vehicle, Toyota best design ever. thank you',\n",
+      "                  'my 4th previa, best van ever made!',\n",
+      "                  \"Mom's Taxi Babies Ride\",\n",
+      "                  'My Favorite Van Ever',\n",
+      "                  'Best Minivan ever'],\n",
+      " 'Unnamed: 0': [0, 1, 2, 3, 4],\n",
+      " 'Unnamed: 0.1': [0, 1, 2, 3, 4],\n",
+      " 'Vehicle_Title': ['1997 Toyota Previa Minivan LE 3dr Minivan',\n",
+      "                   '1997 Toyota Previa Minivan LE All-Trac 3dr Minivan AWD',\n",
+      "                   '1997 Toyota Previa Minivan LE 3dr Minivan',\n",
+      "                   '1997 Toyota Previa Minivan LE All-Trac 3dr Minivan AWD',\n",
+      "                   '1997 Toyota Previa Minivan LE All-Trac 3dr Minivan AWD']}\n"
+     ]
+    }
+   ],
+   "source": [
+    "\n",
+    "\n",
+    "from datasets import load_dataset\n",
+    "\n",
+    "car_reviews = load_dataset(\"florentgbelidji/car-reviews\")\n",
+    "from pprint import pprint\n",
+    "\n",
+    "sample = car_reviews['train'][0:5]\n",
+    "pprint(sample)\n",
+    "\n",
+    "#print(\"Sample training data:\\n\", car_reviews['train'][0])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 83,
+   "id": "683b36d8-aa82-44ae-bcd5-a8a9d57ba13f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{'Unnamed: 0.1': Value('int64'), 'Unnamed: 0': Value('int64'), 'Review_Date': Value('string'), 'Author_Name': Value('string'), 'Vehicle_Title': Value('string'), 'Review_Title': Value('string'), 'Review': Value('string'), 'Rating': Value('int64')}\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(car_reviews['train'].features)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e464699e-d31b-46ab-9f3a-9349a7d1e928",
+   "metadata": {},
+   "source": [
+    "### Load the Model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 85,
+   "id": "e5832ae0-849c-49ca-932e-e4eb26dacee7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "{0: 'negative', 1: 'positive'}\n",
+      "{'negative': 0, 'positive': 1}\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Load model directly\n",
+    "#!pip install ipywidgets # - If the Error displaying widget bothers you, try installing ipywidgets with pip install ipywidgets\n",
+    "#!pip install --upgrade --force-reinstall transformers\n",
+    "\n",
+    "from transformers import AutoTokenizer, AutoModelForSequenceClassification\n",
+    "\n",
+    "tokenizer = AutoTokenizer.from_pretrained(\"AnkitAI/reviews-roberta-base-sentiment-analysis\")\n",
+    "model = AutoModelForSequenceClassification.from_pretrained(\"AnkitAI/reviews-roberta-base-sentiment-analysis\")\n",
+    "print(model.config.id2label)\n",
+    "print(model.config.label2id)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 71,
+   "id": "2222830a-6497-4b44-89fc-fc99852c2cfe",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/ramya/anaconda3/lib/python3.12/site-packages/torch/nn/modules/module.py:1762: FutureWarning: `encoder_attention_mask` is deprecated and will be removed in version 4.55.0 for `RobertaSdpaSelfAttention.forward`.\n",
+      "  return forward_call(*args, **kwargs)\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Example: Analyze a single review\n",
+    "text = sample[\"Review\"]  # Replace with any text from your dataset\n",
+    "\n",
+    "#Tokenize the review text\n",
+    "inputs = tokenizer(text, return_tensors=\"pt\", max_length = 512 ,truncation=True, padding=True)\n",
+    "\n",
+    "# Run the model to get outputs\n",
+    "with torch.no_grad():\n",
+    "    outputs = model(**inputs)\n",
+    "    predicted_class = torch.argmax(outputs.logits, dim=1).tolist()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ca5f32cc-2e7d-412a-90ae-ee83c25afc51",
+   "metadata": {},
+   "source": [
+    "'''Asking to truncate to max_length but no maximum length is provided and the model has no predefined maximum length. Default to no truncation.\r\n",
+    "/home/ramya/anaconda3/lib/python3.12/site-packages/torch/nn/modules/module.py:1747: FutureWarning: `encoder_attention_mask` is deprecated and will be removed in version 4.55.0 for `RobertaSdpaSelfAttention.forward`.\r\n",
+    "  return forward_call(*args, **kwargs)'  \n",
+    "\n",
+    "Got this Warning: which basically means that the model or the tokenizer did not have a default max length, just a warning that nothing is truncated because no max length is specified. So i was gonna specify max_length to 100. ''"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 72,
+   "id": "b6b085cd-ceaa-417c-bd2c-8a3fb1e40815",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Max length in dataset: 2024\n",
+      "Average length: 124.7857181483885\n"
+     ]
+    }
+   ],
+   "source": [
+    "#To check the avg review length before doing that i did this\n",
+    "lengths = [len(tokenizer.tokenize(sample['Review'])) for sample in car_reviews['train']]\n",
+    "print(\"Max length in dataset:\", max(lengths))\n",
+    "print(\"Average length:\", sum(lengths)/len(lengths))\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "590e8fed-957b-43c6-bf50-17b93756baf7",
+   "metadata": {},
+   "source": [
+    "If the maximum length is very large (e.g., 300+ tokens), you might consider a higher max_length (e.g., 256).A tokenized review length of 2024 tokens is very long relative to your average (~125 tokens).For practical reasons, pick a max_length around 256 to 512 tokens.\n",
+    "Hence:\n",
+    "`max_length = 512`"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 73,
+   "id": "aa39d132-651a-404d-b10d-359ae8226016",
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Review: [' there is no way back, enjoy what you have .', ' 1st 95 went over 300k before being totalled by a truck running a red light. Walked away with no injuries. 2nd 95 le supercharged going strong at 155k. Just routine maintenance.  Bought a 96 dx with 68 k, like new on inside. Middle bench removes in 2 minutes, easy to haul things. 95s had the great swiveling middle captain chairs.  Could not resist a 1 owner 97 sc alltrac LE with 80k that I spotted on craigslist, talk about awesome in the snow!  These are fantastic, reliable vans and the best used van value ever.  Use as an enclosed pickup, or convert to a mini RV, loads of space inside.  Easy to fix minor quirks like higher mileage valve cover gasket leaks, coolant reservoir outlet tube obstruction by debris, SADS bushing replacement, etc.', \" Sold 86 Toyota Van 285K miles to be replaced with 97 Previa with 1st baby coming in Jun. Perfect to carry 2nd kid in 99. Also carried Mom, Dad, Father-in-law to doctor's appt. Use mostly for reserve weekend duty. Did not change remote bat 6 yrs later. Did reg maint oil/filter chg every 3K. Used in business for 6 yrs as modified pick up truck by removing middle seat & folding 3rd row. Kids love this because they can lie down and sleep and watch tv. Our kids and parents in their 80s enjoyed trips to NY, VA, FL, LA, GA, TN, SC, NC, AL, TX, MA, CO. With this economy we are glad to have Toyotas in our family. Camry 02 replaced 88 Celica. Convinced five younger brothers to get Toyotas. They did.\", \" I have owned lots of vans, and the Previa is far and away the best van I have ever owned.  Build quality is unbelievable (it's a Toyota, stupid), handling is exemplary with the mid- engine and AWD.  Fuel mileage is 19 mpg around town, with up to 24 on the highway.  I'm a Toyota salesman, and I sold this van new to an engineer and bought it from the family after he passed away. I constantly am amazed with the number of people who ask me if I want to sell it.  Never is a hundred years.\", \" My 1997 AWD Previa is the third one that I have owned. I previously had a 1991 and a 1994. All three have been completely trouble free, for a total of over 620K mi. The supercharger gives the 2.4 litre engine the punch of a V6, while delivering great gas mileage. I've been searching for a replacement for 5 years, but nothing made these days even comes close. The Sienna is too long, fat, low and is just not as much fun. If Toyota ever made a reasonable replacement for the Previa, I would buy it in an instance.\"]\n",
+      "Predicted sentiment class: [1, 1, 1, 1, 1]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Review:\", text)\n",
+    "print(\"Predicted sentiment class:\", predicted_class)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bceaf905-448e-4a60-baa8-f4e099635c12",
+   "metadata": {},
+   "source": [
+    "1. Sentiment Classification on Five Reviews & Evaluation\r\n",
+    "Select the first five reviews from car_reviews['train'] for sentiment classification.\r\n",
+    "\r\n",
+    "Batch process these reviews through the tokenizer and model as you tested with a single sample, generating predicted_labels (the raw model output class indices).\r\n",
+    "\r\n",
+    "Map the predicted labels to a binary list predictions with values {0,1} as required.\r\n",
+    "\r\n",
+    "Extract the true binary ground-truth labels from the dataset for these five reviews.\r\n",
+    "\r\n",
+    "Load evaluation metrics like accuracy and F1 (e.g., via evaluate library).\r\n",
+    "\r\n",
+    "Calculate accuracy_result and f1_result by comparing predictions against true labels."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 74,
+   "id": "11c69be7-f355-4028-b1a6-d733e4099c89",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "first_five = car_reviews['train']['Review'][0:5]\n",
+    "#Select the first five reviews from car_reviews['train'] for sentiment classification."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 75,
+   "id": "c98718f3-6eaa-4ca1-b151-2cf23664a244",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[' there is no way back, enjoy what you have .',\n",
+      " ' 1st 95 went over 300k before being totalled by a truck running a red light. '\n",
+      " 'Walked away with no injuries. 2nd 95 le supercharged going strong at 155k. '\n",
+      " 'Just routine maintenance.  Bought a 96 dx with 68 k, like new on inside. '\n",
+      " 'Middle bench removes in 2 minutes, easy to haul things. 95s had the great '\n",
+      " 'swiveling middle captain chairs.  Could not resist a 1 owner 97 sc alltrac '\n",
+      " 'LE with 80k that I spotted on craigslist, talk about awesome in the snow!  '\n",
+      " 'These are fantastic, reliable vans and the best used van value ever.  Use as '\n",
+      " 'an enclosed pickup, or convert to a mini RV, loads of space inside.  Easy to '\n",
+      " 'fix minor quirks like higher mileage valve cover gasket leaks, coolant '\n",
+      " 'reservoir outlet tube obstruction by debris, SADS bushing replacement, etc.',\n",
+      " ' Sold 86 Toyota Van 285K miles to be replaced with 97 Previa with 1st baby '\n",
+      " 'coming in Jun. Perfect to carry 2nd kid in 99. Also carried Mom, Dad, '\n",
+      " \"Father-in-law to doctor's appt. Use mostly for reserve weekend duty. Did not \"\n",
+      " 'change remote bat 6 yrs later. Did reg maint oil/filter chg every 3K. Used '\n",
+      " 'in business for 6 yrs as modified pick up truck by removing middle seat & '\n",
+      " 'folding 3rd row. Kids love this because they can lie down and sleep and '\n",
+      " 'watch tv. Our kids and parents in their 80s enjoyed trips to NY, VA, FL, LA, '\n",
+      " 'GA, TN, SC, NC, AL, TX, MA, CO. With this economy we are glad to have '\n",
+      " 'Toyotas in our family. Camry 02 replaced 88 Celica. Convinced five younger '\n",
+      " 'brothers to get Toyotas. They did.',\n",
+      " ' I have owned lots of vans, and the Previa is far and away the best van I '\n",
+      " \"have ever owned.  Build quality is unbelievable (it's a Toyota, stupid), \"\n",
+      " 'handling is exemplary with the mid- engine and AWD.  Fuel mileage is 19 mpg '\n",
+      " \"around town, with up to 24 on the highway.  I'm a Toyota salesman, and I \"\n",
+      " 'sold this van new to an engineer and bought it from the family after he '\n",
+      " 'passed away. I constantly am amazed with the number of people who ask me if '\n",
+      " 'I want to sell it.  Never is a hundred years.',\n",
+      " ' My 1997 AWD Previa is the third one that I have owned. I previously had a '\n",
+      " '1991 and a 1994. All three have been completely trouble free, for a total of '\n",
+      " 'over 620K mi. The supercharger gives the 2.4 litre engine the punch of a V6, '\n",
+      " \"while delivering great gas mileage. I've been searching for a replacement \"\n",
+      " 'for 5 years, but nothing made these days even comes close. The Sienna is too '\n",
+      " 'long, fat, low and is just not as much fun. If Toyota ever made a reasonable '\n",
+      " 'replacement for the Previa, I would buy it in an instance.']\n"
+     ]
+    }
+   ],
+   "source": [
+    "pprint(first_five)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 76,
+   "id": "8eb3afd7-f4cf-4dc2-985c-66b5ce57da57",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Predicted sentiment class indices: [1, 1, 1, 1, 1]\n",
+      "Binary predictions: [1, 1, 1, 1, 1]\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Tokenize the review text\n",
+    "inputs = tokenizer(first_five, return_tensors=\"pt\", max_length = 512 ,truncation=True, padding=True)\n",
+    "\n",
+    "# Run the model to get outputs\n",
+    "with torch.no_grad():\n",
+    "    outputs = model(**inputs)\n",
+    "    predicted_labels = torch.argmax(outputs.logits, dim=1).tolist()\n",
+    "print(\"Predicted sentiment class indices:\", predicted_labels)\n",
+    "# (8) Map raw model outputs to binary {0, 1}\n",
+    "# Example mapping: group negative and neutral as 0, positive as 1\n",
+    "mapping = {0: 0, 1: 1, 2: 1}\n",
+    "\n",
+    "binary_predictions = [mapping[label] for label in predicted_labels]\n",
+    "print(\"Binary predictions:\", binary_predictions)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "78711454-b158-4074-af89-febf09527a5f",
+   "metadata": {},
+   "source": [
+    "changed`torch.argmax(outputs.logits, dim=1).item()` to `torch.argmax(outputs.logits, dim=1).tolist()`\n",
+    "You no longer need to use .item() here, because .tolist() handles the conversion from a tensor with multiple elements to a list of Python integers."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 77,
+   "id": "7fd31cb7-b168-4778-96af-352ca13f0cd0",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Review of first 5: [' there is no way back, enjoy what you have .', ' 1st 95 went over 300k before being totalled by a truck running a red light. Walked away with no injuries. 2nd 95 le supercharged going strong at 155k. Just routine maintenance.  Bought a 96 dx with 68 k, like new on inside. Middle bench removes in 2 minutes, easy to haul things. 95s had the great swiveling middle captain chairs.  Could not resist a 1 owner 97 sc alltrac LE with 80k that I spotted on craigslist, talk about awesome in the snow!  These are fantastic, reliable vans and the best used van value ever.  Use as an enclosed pickup, or convert to a mini RV, loads of space inside.  Easy to fix minor quirks like higher mileage valve cover gasket leaks, coolant reservoir outlet tube obstruction by debris, SADS bushing replacement, etc.', \" Sold 86 Toyota Van 285K miles to be replaced with 97 Previa with 1st baby coming in Jun. Perfect to carry 2nd kid in 99. Also carried Mom, Dad, Father-in-law to doctor's appt. Use mostly for reserve weekend duty. Did not change remote bat 6 yrs later. Did reg maint oil/filter chg every 3K. Used in business for 6 yrs as modified pick up truck by removing middle seat & folding 3rd row. Kids love this because they can lie down and sleep and watch tv. Our kids and parents in their 80s enjoyed trips to NY, VA, FL, LA, GA, TN, SC, NC, AL, TX, MA, CO. With this economy we are glad to have Toyotas in our family. Camry 02 replaced 88 Celica. Convinced five younger brothers to get Toyotas. They did.\", \" I have owned lots of vans, and the Previa is far and away the best van I have ever owned.  Build quality is unbelievable (it's a Toyota, stupid), handling is exemplary with the mid- engine and AWD.  Fuel mileage is 19 mpg around town, with up to 24 on the highway.  I'm a Toyota salesman, and I sold this van new to an engineer and bought it from the family after he passed away. I constantly am amazed with the number of people who ask me if I want to sell it.  Never is a hundred years.\", \" My 1997 AWD Previa is the third one that I have owned. I previously had a 1991 and a 1994. All three have been completely trouble free, for a total of over 620K mi. The supercharger gives the 2.4 litre engine the punch of a V6, while delivering great gas mileage. I've been searching for a replacement for 5 years, but nothing made these days even comes close. The Sienna is too long, fat, low and is just not as much fun. If Toyota ever made a reasonable replacement for the Previa, I would buy it in an instance.\"]\n",
+      "Predicted sentiment class: [1, 1, 1, 1, 1]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Review of first 5:\", first_five)\n",
+    "print(\"Predicted sentiment class:\", predicted_labels)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "66371980-3fce-4fde-a18d-1450d9e76f53",
+   "metadata": {},
+   "source": [
+    "2. **Extract True Labels and Process Predictions**\r\n",
+    "    - Extract the ground-truth sentiment labels from the dataset.\r\n",
+    "    - Ensure both your predictions and true labels are in the required format (e.g., binary integers: 0/1)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "17e73871-0e4f-4912-a202-f620198460d9",
+   "metadata": {},
+   "source": [
+    "Since the Rating label is not yet in Binary but a value from 1-5 stars, we need to map the ratings. For example: 4 and 5 for positive, 1 and 2 for negative, 3 as neutral or excluded "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 78,
+   "id": "264c9083-5e14-4995-aaf8-29fb1b0deb6e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "True binary labels: [1, 1, 1, 1, 1]\n"
+     ]
+    }
+   ],
+   "source": [
+    "trueratings_first_five = car_reviews['train']['Rating'][0:5]  # or the appropriate label column\n",
+    "\n",
+    "true_labels = [1 if int(rating) >= 4 else 0 for rating in trueratings_first_five]\n",
+    "print(\"True binary labels:\", true_labels)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0cdbcb04-e799-42e1-a797-b6d96df7534a",
+   "metadata": {},
+   "source": [
+    " ### Evaluation Metrics "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 79,
+   "id": "55e8a622-96c3-4356-a2b3-b3c2bea7882d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#!pip install evaluate\n",
+    "\n",
+    "\n",
+    "import evaluate\n",
+    "\n",
+    "accuracy = evaluate.load('accuracy')\n",
+    "f1 = evaluate.load('f1')\n",
+    "accuracy_result = accuracy.compute(predictions=predictions, references=true_labels)\n",
+    "f1_result = f1.compute(predictions=predictions, references=true_labels)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 80,
+   "id": "bf617d08-30c8-4391-ade7-fb5a9c9c3d69",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Accuracy: {'accuracy': 1.0}\n",
+      "F1 Score: {'f1': 1.0}\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Accuracy:\", accuracy_result)\n",
+    "print(\"F1 Score:\", f1_result)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "870d5dfb-01a0-48f5-8377-376f034bbd51",
+   "metadata": {},
+   "source": [
+    "## Implementation of translation LLM"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 81,
+   "id": "d880f7c8-2c10-4937-86d4-8aff3405d035",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/ramya/anaconda3/lib/python3.12/site-packages/transformers/models/marian/tokenization_marian.py:175: UserWarning: Recommended: pip install sacremoses.\n",
+      "  warnings.warn(\"Recommended: pip install sacremoses.\")\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Model translation:\n",
+      "No hay vuelta atrás, disfruta de lo que tienes.\n",
+      "Spanish translation references:\n",
+      "['No hay vuelta atrás, disfruta de lo que tienes.', 'No hay vuelta atrás, disfruta de lo que tienes.']\n",
+      "1.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Instruction 2: Translation\n",
+    "#!pip install tf-keras\n",
+    "from transformers import pipeline\n",
+    "# Load translation LLM into a pipeline and translate car review\n",
+    "first_review = car_reviews['train']['Review'][0]\n",
+    "translator = pipeline(\"translation_en_to_es\", model=\"Helsinki-NLP/opus-mt-en-es\")\n",
+    "translated_review = translator(first_review, max_length=27)[0]['translation_text']\n",
+    "print(f\"Model translation:\\n{translated_review}\")\n",
+    "\n",
+    "# Load reference translations from file\n",
+    "with open(\"/home/ramya/reference_translations.txt\", 'r', encoding='utf-8') as file:\n",
+    "    lines = file.readlines()\n",
+    "\n",
+    "references = [line.strip() for line in lines]\n",
+    "print(f\"Spanish translation references:\\n{references}\")\n",
+    "\n",
+    "# Load and calculate BLEU score metric\n",
+    "bleu = evaluate.load(\"bleu\")\n",
+    "bleu_score = bleu.compute(predictions=[translated_review], references=[references])\n",
+    "print(bleu_score['bleu'])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 82,
+   "id": "1a9dc742-d7ff-40e8-a606-d33c69b7fd38",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Context:\n",
+      " 1st 95 went over 300k before being totalled by a truck running a red light. Walked away with no injuries. 2nd 95 le supercharged going strong at 155k. Just routine maintenance.  Bought a 96 dx with 68 k, like new on inside. Middle bench removes in 2 minutes, easy to haul things. 95s had the great swiveling middle captain chairs.  Could not resist a 1 owner 97 sc alltrac LE with 80k that I spotted on craigslist, talk about awesome in the snow!  These are fantastic, reliable vans and the best used van value ever.  Use as an enclosed pickup, or convert to a mini RV, loads of space inside.  Easy to fix minor quirks like higher mileage valve cover gasket leaks, coolant reservoir outlet tube obstruction by debris, SADS bushing replacement, etc.\n",
+      "Answer:  [CLS]\n",
+      "Original text:\n",
+      " I went to Nissan looking  to see what kind of car I could afford. I was not expecting to walk out and get into a new car! However, the car was suggested to me since it would be my first car. I have learned a lot about the Versa since I have had it for about 2 1/2 months. The car is comfortable the storage space is roomy especially for the back seats. The engine is noisy but the car runs smoothly and has no problems manuevering in and out of traffic, parking spots etc. I understand it is a subcompact vehicle, so it will feel a little tight if you are taller person ( I am 5'9\") but someone who is 6'5\" has driven it and was comfortable while driving a lengthy distance(the seat had to be leaned back,)\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/home/ramya/anaconda3/lib/python3.12/site-packages/torch/nn/modules/module.py:1762: FutureWarning: `encoder_attention_mask` is deprecated and will be removed in version 4.55.0 for `BertSdpaSelfAttention.forward`.\n",
+      "  return forward_call(*args, **kwargs)\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Summarized text:\n",
+      "I went to Nissan looking to see what kind of car I could afford. I was not expecting to walk out and get into a new car! The Versa is comfortable the storage space is roomy especially for the back seats. The engine is noisy but the car runs smoothly and has no problems manuevering in and out of traffic, parking spots etc.\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Instruction 3: extractive QA\n",
+    "\n",
+    "# Import auto classes (optional: can be solved via pipelines too)\n",
+    "from transformers import AutoTokenizer\n",
+    "from transformers import AutoModelForQuestionAnswering\n",
+    "\n",
+    "# Instantiate model and tokenizer\n",
+    "model_ckp = \"deepset/minilm-uncased-squad2\"\n",
+    "tokenizer = AutoTokenizer.from_pretrained(model_ckp)\n",
+    "model = AutoModelForQuestionAnswering.from_pretrained(model_ckp)\n",
+    "\n",
+    "# Define context and question, and tokenize them\n",
+    "context = car_reviews['train']['Review'][1]\n",
+    "print(f\"Context:\\n{context}\")\n",
+    "question = \"What did he like about the brand?\"\n",
+    "inputs = tokenizer(question, context, return_tensors=\"pt\")\n",
+    "\n",
+    "# Perform inference and extract answer from raw outputs\n",
+    "with torch.no_grad():\n",
+    "  outputs = model(**inputs)\n",
+    "start_idx = torch.argmax(outputs.start_logits)\n",
+    "end_idx = torch.argmax(outputs.end_logits) + 1\n",
+    "answer_span = inputs[\"input_ids\"][0][start_idx:end_idx]\n",
+    "\n",
+    "# Decode and show answer\n",
+    "answer = tokenizer.decode(answer_span)\n",
+    "print(\"Answer: \", answer)\n",
+    "\n",
+    "\n",
+    "# Instruction 4\n",
+    "\n",
+    "# Get original text to summarize upon car review\n",
+    "text_to_summarize = car_reviews['train']['Review'][-1]\n",
+    "print(f\"Original text:\\n{text_to_summarize}\")\n",
+    "\n",
+    "# Load summarization pipeline and perform inference\n",
+    "model_name = \"cnicu/t5-small-booksum\"\n",
+    "summarizer = pipeline(\"summarization\", model=model_name)\n",
+    "outputs = summarizer(text_to_summarize, max_length=53)\n",
+    "summarized_text = outputs[0]['summary_text']\n",
+    "print(f\"Summarized text:\\n{summarized_text}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d0ebb243-8ae0-4941-b0bf-88edb22db466",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
